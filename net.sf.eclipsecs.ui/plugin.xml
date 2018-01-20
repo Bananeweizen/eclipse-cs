@@ -304,6 +304,9 @@
                     class="org.eclipse.jdt.core.ICompilationUnit"/>
                 <selection
                     class="org.eclipse.jdt.core.IType"/>
+                <selection
+                      class="org.eclipse.ui.IWorkingSet">
+                </selection>
             </action>
         </objectContribution>
     </extension>
@@ -457,6 +460,35 @@
                 menubarPath="Checkstyle.menu/ondemand"
                 tooltip="%CheckSelectedFilesAction.tooltip"
                 id="net.sf.eclipsecs.ui.actions.CheckSelectedFilesAction"/>
+        </objectContribution>
+        <objectContribution
+              adaptable="true"
+              id="net.sf.eclipsecs.ondemand"
+              objectClass="org.eclipse.ui.IWorkingSet">
+           <menu
+                 id="Checkstyle.menu"
+                 label="%Checkstyle.menu"
+                 path="additions">
+              <separator
+                    name="ondemand">
+              </separator>
+           </menu>
+           <action
+                 class="net.sf.eclipsecs.ui.actions.ClearSelectedFilesAction"
+                 enablesFor="+"
+                 id="net.sf.eclipsecs.actions.ClearSelectedFilesAction"
+                 label="%ClearSelectedFilesAction.label"
+                 menubarPath="Checkstyle.menu/ondemand"
+                 tooltip="%ClearSelectedFilesAction.tooltip">
+           </action>
+           <action
+                 class="net.sf.eclipsecs.ui.actions.CheckSelectedFilesAction"
+                 enablesFor="+"
+                 id="net.sf.eclipsecs.ui.actions.CheckSelectedFilesAction"
+                 label="%CheckSelectedFilesAction.label"
+                 menubarPath="Checkstyle.menu/ondemand"
+                 tooltip="%CheckSelectedFilesAction.tooltip">
+           </action>
         </objectContribution>
     </extension>
     

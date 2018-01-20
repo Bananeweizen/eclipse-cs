@@ -22,73 +22,46 @@ package net.sf.eclipsecs.ui.actions;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-
-import net.sf.eclipsecs.core.jobs.RunCheckstyleOnFilesJob;
-import net.sf.eclipsecs.ui.CheckstyleUIPlugin;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.IWorkbenchPart;
+
+import net.sf.eclipsecs.core.jobs.RunCheckstyleOnFilesJob;
+import net.sf.eclipsecs.ui.CheckstyleUIPlugin;
 
 /**
- * Action to diable Checkstyle on one ore more projects.
+ * Action to run Checkstyle on one ore more projects.
  * 
  * @author Lars Ködderitzsch
  */
-public class CheckSelectedFilesAction implements IObjectActionDelegate {
-
-  private IWorkbenchPart mPart;
-
-  private IStructuredSelection mSelection;
+public class CheckSelectedFilesAction extends AbstractCheckstyleAction {
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-    mPart = targetPart;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void selectionChanged(IAction action, ISelection selection) {
-
-    if (selection instanceof IStructuredSelection) {
-      mSelection = (IStructuredSelection) selection;
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  @SuppressWarnings("unchecked")
   public void run(IAction action) {
 
     List<IFile> filesToCheck = new ArrayList<IFile>();
 
     try {
-      addFileResources(mSelection.toList(), filesToCheck);
+      addFileResources(getSelectedResources(), filesToCheck);
 
       RunCheckstyleOnFilesJob job = new RunCheckstyleOnFilesJob(filesToCheck);
       job.setRule(job);
       job.schedule();
     } catch (CoreException e) {
-      CheckstyleUIPlugin.errorDialog(mPart.getSite().getShell(), e, true);
+      CheckstyleUIPlugin.errorDialog(getActivePart().getSite().getShell(), e, true);
     }
   }
 
   /**
-   * Recursivly add all files contained in the given resource collection to the
+   * Recursively add all files contained in the given resource collection to the
    * second list.
    * 
    * @param resources
@@ -96,9 +69,9 @@ public class CheckSelectedFilesAction implements IObjectActionDelegate {
    * @param files
    *          the list of files
    * @throws CoreException
-   *           en unexpected exception
+   *           an unexpected exception
    */
-  private void addFileResources(List<IResource> resources, List<IFile> files) throws CoreException {
+  private void addFileResources(Collection<IResource> resources, List<IFile> files) throws CoreException {
 
     for (IResource resource : resources) {
 
@@ -110,7 +83,7 @@ public class CheckSelectedFilesAction implements IObjectActionDelegate {
         files.add((IFile) resource);
       } else if (resource instanceof IContainer) {
         addFileResources(Arrays.asList(((IContainer) resource).members()), files);
-      }
+      } 
     }
   }
 }

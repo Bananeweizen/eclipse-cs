@@ -41,11 +41,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.window.Window;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.dialogs.ListDialog;
 import org.eclipse.ui.model.WorkbenchLabelProvider;
 
@@ -55,32 +51,7 @@ import org.eclipse.ui.model.WorkbenchLabelProvider;
  * 
  * @author Lars Ködderitzsch
  */
-public class ConfigureProjectFromBluePrintAction implements IObjectActionDelegate {
-
-  private IWorkbenchPart mPart;
-
-  private Collection<IProject> mSelectedProjects;
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-    mPart = targetPart;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  @SuppressWarnings("unchecked")
-  public void selectionChanged(IAction action, ISelection selection) {
-
-    if (selection instanceof IStructuredSelection) {
-      IStructuredSelection sel = (IStructuredSelection) selection;
-      mSelectedProjects = sel.toList();
-    }
-  }
+public class ConfigureProjectFromBluePrintAction extends AbstractCheckstyleAction {
 
   /**
    * {@inheritDoc}
@@ -94,9 +65,9 @@ public class ConfigureProjectFromBluePrintAction implements IObjectActionDelegat
       filteredProjects.add(projects[i]);
     }
 
-    filteredProjects.removeAll(mSelectedProjects);
+    filteredProjects.removeAll(getSelectedProjects());
 
-    ListDialog dialog = new ListDialog(mPart.getSite().getShell());
+    ListDialog dialog = new ListDialog(getActivePart().getSite().getShell());
     dialog.setInput(filteredProjects);
     dialog.setContentProvider(new ArrayContentProvider());
     dialog.setLabelProvider(new WorkbenchLabelProvider());
@@ -108,7 +79,7 @@ public class ConfigureProjectFromBluePrintAction implements IObjectActionDelegat
 
       if (result.length > 0) {
 
-        BulkConfigureJob job = new BulkConfigureJob((IProject) result[0], mSelectedProjects);
+        BulkConfigureJob job = new BulkConfigureJob((IProject) result[0], getSelectedProjects());
         job.schedule();
       }
 

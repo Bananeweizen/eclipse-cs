@@ -21,10 +21,6 @@
 package net.sf.eclipsecs.ui.actions;
 
 import java.util.Collection;
-import java.util.List;
-
-import net.sf.eclipsecs.core.builder.CheckstyleMarker;
-import net.sf.eclipsecs.ui.Messages;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.WorkspaceJob;
@@ -33,54 +29,28 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.IWorkbenchPart;
+
+import net.sf.eclipsecs.core.builder.CheckstyleMarker;
+import net.sf.eclipsecs.ui.Messages;
 
 /**
- * Action to diable Checkstyle on one ore more projects.
+ * Action to clear Checkstyle markers on one ore more projects.
  * 
  * @author Lars Ködderitzsch
  */
-public class ClearSelectedFilesAction implements IObjectActionDelegate {
-
-  private IStructuredSelection mSelection;
+public class ClearSelectedFilesAction extends AbstractCheckstyleAction {
 
   /**
    * {@inheritDoc}
    */
   @Override
-  public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-    // NOOP
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void selectionChanged(IAction action, ISelection selection) {
-
-    if (selection instanceof IStructuredSelection) {
-      mSelection = (IStructuredSelection) selection;
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  @SuppressWarnings("unchecked")
   public void run(IAction action) {
-
-    List<IResource> resourcesToClear = mSelection.toList();
-
-    ClearMarkersJob job = new ClearMarkersJob(resourcesToClear);
+    ClearMarkersJob job = new ClearMarkersJob(getSelectedResources());
     job.schedule();
   }
 
   /**
-   * Activates Checkstyle on a collection of projects.
+   * Clears checkstyle markers on a collection of projects.
    * 
    * @author Lars Ködderitzsch
    */

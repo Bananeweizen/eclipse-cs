@@ -53,7 +53,7 @@ public class ConfigureDeconfigureNatureJob extends WorkspaceJob {
   private IProgressMonitor mMonitor;
 
   /**
-   * Construktor for this operation.
+   * Constructor for this operation.
    * 
    * @param project
    *          the project to be configured/deconfiured
@@ -94,7 +94,7 @@ public class ConfigureDeconfigureNatureJob extends WorkspaceJob {
    * Helper method to enable the given nature for the project.
    * 
    * @throws CoreException
-   *           an error while setting the nature occured
+   *           an error while setting the nature occurred
    */
   private void enableNature() throws CoreException {
 
@@ -117,7 +117,7 @@ public class ConfigureDeconfigureNatureJob extends WorkspaceJob {
    * Helper method to disable the given nature for the project.
    * 
    * @throws CoreException
-   *           an error while removing the nature occured
+   *           an error while removing the nature occurred
    */
   private void disableNature() throws CoreException {
 

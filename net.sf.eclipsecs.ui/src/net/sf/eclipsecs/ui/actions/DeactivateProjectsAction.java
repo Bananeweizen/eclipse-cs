@@ -33,46 +33,20 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.ui.IObjectActionDelegate;
-import org.eclipse.ui.IWorkbenchPart;
 
 /**
- * Action to diable Checkstyle on one ore more projects.
+ * Action to disable Checkstyle on one ore more projects.
  * 
  * @author Lars Ködderitzsch
  */
-public class DeactivateProjectsAction implements IObjectActionDelegate {
-
-  private Collection<IProject> mSelectedProjects;
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public void setActivePart(IAction action, IWorkbenchPart targetPart) {
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  @SuppressWarnings("unchecked")
-  public void selectionChanged(IAction action, ISelection selection) {
-
-    if (selection instanceof IStructuredSelection) {
-      IStructuredSelection sel = (IStructuredSelection) selection;
-      mSelectedProjects = sel.toList();
-    }
-  }
+public class DeactivateProjectsAction extends AbstractCheckstyleAction {
 
   /**
    * {@inheritDoc}
    */
   @Override
   public void run(IAction action) {
-    BulkCheckstyleActivateJob job = new BulkCheckstyleActivateJob(mSelectedProjects);
+    BulkCheckstyleActivateJob job = new BulkCheckstyleActivateJob(getSelectedProjects());
     job.schedule();
   }
 
