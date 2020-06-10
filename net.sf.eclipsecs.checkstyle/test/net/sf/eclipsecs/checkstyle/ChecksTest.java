@@ -6,78 +6,99 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-
-import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
-import com.puppycrawl.tools.checkstyle.utils.ModuleReflectionUtil;
+import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
+import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
-import net.sf.eclipsecs.checkstyle.utils.CheckUtil;
-import net.sf.eclipsecs.checkstyle.utils.XmlUtil;
-
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicNode;
+import org.junit.jupiter.api.TestFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.google.common.collect.Streams;
+import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
+import com.puppycrawl.tools.checkstyle.utils.ModuleReflectionUtil;
+
+import net.sf.eclipsecs.checkstyle.utils.CheckUtil;
+import net.sf.eclipsecs.checkstyle.utils.XmlUtil;
+
 public class ChecksTest {
-  @Test
-  public void testMetadataFiles() throws Exception {
+
+  @TestFactory
+  public Stream<DynamicNode> dynamicTestsOfMetadataFiles() throws Exception {
     final Set<Class<?>> modules = CheckUtil.getCheckstyleModules();
     final Set<String> packages = CheckUtil.getPackages(modules);
 
-    assertTrue(modules.size() > 0, "no modules");
+    return Streams.concat(
+            Stream.of(dynamicTest("modules exist", () -> assertTrue(modules.size() > 0, "no modules"))),
 
-    for (String p : packages) {
-      assertTrue(new File(getEclipseCsPath(p, "")).exists(), "folder " + p + " must exist in eclipsecs");
+            packages.stream().map(p -> {
+              final Set<Class<?>> packageModules = CheckUtil.getModulesInPackage(modules, p);
+              return dynamicContainer("Package " + p, Stream.of(
+                      dynamicTest("folder exists",
+                              () -> assertTrue(new File(getEclipseCsPath(p, "")).exists(),
+                                      "folder " + p + " must exist in eclipsecs")),
 
-      final Set<Class<?>> packgeModules = CheckUtil.getModulesInPackage(modules, p);
+                      validateEclipseCsMetaXmlFile(
+                              new File(getEclipseCsPath(p, "/checkstyle-metadata.xml")), p,
+                              new HashSet<>(packageModules)),
 
-      validateEclipseCsMetaXmlFile(new File(getEclipseCsPath(p, "/checkstyle-metadata.xml")), p,
-              new HashSet<>(packgeModules));
+                      validateEclipseCsMetaPropFile(
+                              new File(getEclipseCsPath(p, "/checkstyle-metadata.properties")), p,
+                              new HashSet<>(packageModules))));
 
-      validateEclipseCsMetaPropFile(
-              new File(getEclipseCsPath(p, "/checkstyle-metadata.properties")), p,
-              new HashSet<>(packgeModules));
-    }
+            }));
   }
 
-  private static void validateEclipseCsMetaXmlFile(File file, String packge,
-          Set<Class<?>> packgeModules) throws Exception {
-    assertTrue(file.exists(), "'checkstyle-metadata.xml' must exist in eclipsecs in inside " + packge);
+  private static DynamicNode validateEclipseCsMetaXmlFile(File file, String packge,
+          Set<Class<?>> packgeModules) {
+    return dynamicContainer("metadata.xml", Stream.of(
+            dynamicTest("exists", () -> assertTrue(file.exists(), "'checkstyle-metadata.xml' must exist in eclipsecs in inside " + packge)),
+            dynamicContainer("content", () -> {
+              final String input = new String(Files.readAllBytes(file.toPath()), UTF_8);
+              final Document document = XmlUtil.getRawXml(file.getAbsolutePath(), input, input);
 
-    final String input = new String(Files.readAllBytes(file.toPath()), UTF_8);
-    final Document document = XmlUtil.getRawXml(file.getAbsolutePath(), input, input);
+              final NodeList ruleGroups = document.getElementsByTagName("rule-group-metadata");
 
-    final NodeList ruleGroups = document.getElementsByTagName("rule-group-metadata");
+              return Stream.of(
+                      dynamicTest("rule group count", () -> assertEquals(1, ruleGroups.getLength(), packge + " checkstyle-metadata.xml must contain only one rule group")),
+                      dynamicContainer("rule groups", Stream.of())
+              );
 
-    assertEquals(1, ruleGroups.getLength(), packge + " checkstyle-metadata.xml must contain only one rule group");
+              for (int position = 0; position < ruleGroups.getLength(); position++) {
+                final Node ruleGroup = ruleGroups.item(position);
+                final Set<Node> children = XmlUtil.getChildrenElements(ruleGroup);
 
-    for (int position = 0; position < ruleGroups.getLength(); position++) {
-      final Node ruleGroup = ruleGroups.item(position);
-      final Set<Node> children = XmlUtil.getChildrenElements(ruleGroup);
+                validateEclipseCsMetaXmlFileRules(packge, packgeModules, children);
+              }
 
-      validateEclipseCsMetaXmlFileRules(packge, packgeModules, children);
-    }
+              result.add(dynamicContainer("missing modules", packgeModules.stream().map(module -> dynamicTest(module.getCanonicalName(), () -> fail("Module not found in " + packge + " checkstyle-metadata.xml: "
+                        + module.getCanonicalName())));
+              
+            })
+    ));
+    
 
-    for (Class<?> module : packgeModules) {
-      fail("Module not found in " + packge + " checkstyle-metadata.xml: "
-              + module.getCanonicalName());
-    }
   }
 
-  private static void validateEclipseCsMetaXmlFileRules(String packge, Set<Class<?>> packgeModules,
-          Set<Node> rules) throws Exception {
+  private static Collection<DynamicNode> validateEclipseCsMetaXmlFileRules(String packge, Set<Class<?>> packgeModules,
+          Set<Node> rules) {
     for (Node rule : rules) {
       final NamedNodeMap attributes = rule.getAttributes();
       final Node internalNameNode = attributes.getNamedItem("internal-name");
@@ -316,9 +337,10 @@ public class ChecksTest {
     return null;
   }
 
-  private static void validateEclipseCsMetaPropFile(File file, String packge,
-          Set<Class<?>> packgeModules) throws Exception {
-    assertTrue(file.exists(), "'checkstyle-metadata.properties' must exist in eclipsecs in inside " + packge);
+  private static DynamicNode validateEclipseCsMetaPropFile(File file, String packge,
+          Set<Class<?>> packgeModules) {
+    ArrayList<DynamicNode> result = new ArrayList<>();
+    result.add(dynamicTest("exists", () -> assertTrue(file.exists(), "'checkstyle-metadata.properties' must exist in eclipsecs in inside " + packge)));
 
     final Properties prop = new Properties();
     prop.load(new FileInputStream(file));
@@ -346,6 +368,8 @@ public class ChecksTest {
         fail("Unknown property found in eclipsecs properties " + packge + ": " + property);
       }
     }
+    
+    return dynamicContainer("metadata.properties", result);
   }
 
   private static Class<?> findModule(Set<Class<?>> modules, String classPath) {
@@ -363,10 +387,14 @@ public class ChecksTest {
     return result;
   }
 
-  private static String getEclipseCsPath(String packageName, String fileName) throws IOException {
-    return new File(
-            "../net.sf.eclipsecs.checkstyle/metadata/" + packageName.replace(".", "/") + fileName)
-                    .getCanonicalPath();
+  private static String getEclipseCsPath(String packageName, String fileName) {
+    try {
+      return new File(
+              "../net.sf.eclipsecs.checkstyle/metadata/" + packageName.replace(".", "/") + fileName)
+                      .getCanonicalPath();
+    } catch (IOException e) {
+      fail(e);
+    }
   }
 
   private static String getEclipseQuickfixPath(String classpath) throws IOException {
